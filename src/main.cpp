@@ -79,6 +79,9 @@ void configurarBoton1(void)
   attachInterrupt(digitalPinToInterrupt(boton1), ISRBoton1, RISING);
 }
 
+//*****************************************************************************
+//Función para convertir el valor de la temperatura
+//*****************************************************************************
 void temperatura(void)
 {
   voltage = raw_LM35 * 3.3 / 4095.0;
