@@ -13,8 +13,26 @@
 //*****************************************************************************
 //Definicion etiquetas
 //*****************************************************************************
-#define LM35 35   //toma de datos en sensor
-#define boton1 23 //Botón para parte 1
+#define LM35 13   //toma de datos en sensor
+#define boton1 27 //Botón para parte 1
+
+//Parámetro PWM led Verde
+#define pwmChannelLedV 1
+#define freqPWMLedV 5000
+#define resolutionPWMLedV 8
+#define pinPWMLedV 12
+
+//Parámetro PWM led Amarillo
+#define pwmChannelLedA 3
+#define freqPWMLedA 5000
+#define resolutionPWMLedA 8
+#define pinPWMLedA 26
+
+//Parámetro PWM led Rojo
+#define pwmChannelLedR 2
+#define freqPWMLedR 5000
+#define resolutionPWMLedR 8
+#define pinPWMLedR 25
 
 //*****************************************************************************
 //Varibles globales
@@ -42,8 +60,12 @@ void IRAM_ATTR ISRBoton1() //interrupción para botón 1 (Derecha)
 //*****************************************************************************
 //Prototipos de funcion
 //*****************************************************************************
+void configurarPWMLedR(void);
+void configurarPWMLedA(void);
+void configurarPWMLedV(void);
 void configurarBoton1(void);
 void temperatura(void);
+void encenderLeds(void);
 
 //*****************************************************************************
 //configuracion
@@ -53,6 +75,12 @@ void setup()
   pinMode(boton1, INPUT_PULLUP);
   Serial.begin(115200);
   configurarBoton1();
+
+  //Señales PWM
+  configurarPWMLedR();
+  configurarPWMLedA();
+  configurarPWMLedV();
+  
 }
 
 //*****************************************************************************
@@ -61,6 +89,7 @@ void setup()
 void loop()
 {
   temperatura();
+  encenderLeds();
   Serial.print("Raw Value = ");
   Serial.println(raw_LM35);
   Serial.print("Voltaje = ");
@@ -80,10 +109,73 @@ void configurarBoton1(void)
 }
 
 //*****************************************************************************
+//Función para configurar módulo PWM Led Rojo
+//*****************************************************************************
+void configurarPWMLedR(void)
+{
+  //Paso 1: Configurar el modulo PWM
+  ledcSetup(pwmChannelLedR, freqPWMLedR, resolutionPWMLedR);
+
+  //Paso 2: seleccionar en que GPIO tendremos nuestra señal PWM
+  ledcAttachPin(pinPWMLedR, pwmChannelLedR);
+}
+
+//*****************************************************************************
+//Función para configurar módulo PWM Led Verde
+//*****************************************************************************
+void configurarPWMLedV(void)
+{
+  //Paso 1: Configurar el modulo PWM
+  ledcSetup(pwmChannelLedV, freqPWMLedV, resolutionPWMLedV);
+
+  //Paso 2: seleccionar en que GPIO tendremos nuestra señal PWM
+  ledcAttachPin(pinPWMLedV, pwmChannelLedV);
+}
+
+//*****************************************************************************
+//Función para configurar módulo PWM Led Amarillo
+//*****************************************************************************
+void configurarPWMLedA(void)
+{
+  //Paso 1: Configurar el modulo PWM
+  ledcSetup(pwmChannelLedA, freqPWMLedA, resolutionPWMLedA);
+
+  //Paso 2: seleccionar en que GPIO tendremos nuestra señal PWM
+  ledcAttachPin(pinPWMLedA, pwmChannelLedA);
+}
+
+//*****************************************************************************
 //Función para convertir el valor de la temperatura
 //*****************************************************************************
 void temperatura(void)
 {
   voltage = raw_LM35 * 3.3 / 4095.0;
   tempC = voltage / 0.010;
+}
+
+//*****************************************************************************
+//Función para encender leds
+//*****************************************************************************
+void encenderLeds(void)
+{
+  if (tempC <= 37.0)
+  {
+    ledcWrite(pwmChannelLedV, 255);
+    ledcWrite(pwmChannelLedA, 0);
+    ledcWrite(pwmChannelLedR, 0);
+  }
+
+  else if (tempC > 37.0 && tempC <= 37.5)
+  {
+    ledcWrite(pwmChannelLedV, 0);
+    ledcWrite(pwmChannelLedA, 255);
+    ledcWrite(pwmChannelLedR, 0);
+  }
+
+  else if (tempC > 37.5)
+  {
+    ledcWrite(pwmChannelLedV, 0);
+    ledcWrite(pwmChannelLedA, 0);
+    ledcWrite(pwmChannelLedR, 255);
+  }
 }
