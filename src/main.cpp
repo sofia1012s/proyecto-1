@@ -13,8 +13,14 @@
 //*****************************************************************************
 //Definicion etiquetas
 //*****************************************************************************
-#define LM35 13   //toma de datos en sensor
+#define LM35 32   //toma de datos en sensor
 #define boton1 27 //Botón para parte 1
+
+//Parámetro PWM servo motor
+#define pwmChannelServo 5
+#define freqPWMServo 50
+#define resolutionPWMServo 16
+#define pinPWMServo 13
 
 //Parámetro PWM led Verde
 #define pwmChannelLedV 1
@@ -40,6 +46,7 @@
 int raw_LM35 = 0;    //valor tomado del sensor
 float voltage = 0.0; //voltaje del sensor
 float tempC = 0.0;   //temperatura en °C
+int contador = 160;
 
 //*****************************************************************************
 //ISR: interrupciones
@@ -53,6 +60,17 @@ void IRAM_ATTR ISRBoton1() //interrupción para botón 1 (Derecha)
   if (tiempo_interrupcion - ultimo_tiempo_interrupcion > 200)
   {
     raw_LM35 = analogRead(LM35); //tomar el dato del sensor y actualizarlo
+    contador -= 20;              //Disminuye 20 al contador de botón
+
+    if (contador == 180) //el valor no puede ser mayor a 180
+    {
+      contador = 180;
+    }
+
+    else if (contador == 0) //el valor no puede ser menor a 0
+    {
+      contador = 0;
+    }
   }
   ultimo_tiempo_interrupcion = tiempo_interrupcion; //actualiza el valor del tiempo de la interrupción
 }
@@ -64,8 +82,10 @@ void configurarPWMLedR(void);
 void configurarPWMLedA(void);
 void configurarPWMLedV(void);
 void configurarBoton1(void);
+void configurarPWMServo(void);
 void temperatura(void);
 void encenderLeds(void);
+void moverServo();
 
 //*****************************************************************************
 //configuracion
@@ -77,10 +97,10 @@ void setup()
   configurarBoton1();
 
   //Señales PWM
+  configurarPWMServo();
   configurarPWMLedR();
   configurarPWMLedA();
   configurarPWMLedV();
-  
 }
 
 //*****************************************************************************
@@ -88,14 +108,20 @@ void setup()
 //*****************************************************************************
 void loop()
 {
+
   temperatura();
   encenderLeds();
+  moverServo(); //función para mover servo
   Serial.print("Raw Value = ");
   Serial.println(raw_LM35);
   Serial.print("Voltaje = ");
   Serial.println(voltage);
   Serial.print("Grados = ");
   Serial.println(tempC);
+  Serial.print("Contador = ");
+  Serial.println(contador);
+  Serial.print("Angulo = ");
+  Serial.println(contador);
   delay(1000);
 }
 
@@ -145,6 +171,18 @@ void configurarPWMLedA(void)
 }
 
 //*****************************************************************************
+//Función para configurar módulo PWM de Servo
+//*****************************************************************************
+void configurarPWMServo(void)
+{
+  //Paso 1: Configurar el modulo PWM
+  ledcSetup(pwmChannelServo, freqPWMServo, resolutionPWMServo);
+
+  //Paso 2: seleccionar en que GPIO tendremos nuestra señal PWM
+  ledcAttachPin(pinPWMServo, pwmChannelServo);
+}
+
+//*****************************************************************************
 //Función para convertir el valor de la temperatura
 //*****************************************************************************
 void temperatura(void)
@@ -170,6 +208,7 @@ void encenderLeds(void)
     ledcWrite(pwmChannelLedV, 0);
     ledcWrite(pwmChannelLedA, 255);
     ledcWrite(pwmChannelLedR, 0);
+    ledcWrite(pwmChannelServo, 100);
   }
 
   else if (tempC > 37.5)
@@ -177,5 +216,30 @@ void encenderLeds(void)
     ledcWrite(pwmChannelLedV, 0);
     ledcWrite(pwmChannelLedA, 0);
     ledcWrite(pwmChannelLedR, 255);
+    ledcWrite(pwmChannelServo, 200);
   }
+}
+
+//*****************************************************************************
+//Función para mover servo con el contador
+//*****************************************************************************
+void moverServo(void)
+{
+  /*if (tempC <= 37.0)
+  {
+    ledcWrite(pwmChannelServo, 0);
+  }
+
+  else if (tempC > 37.0 && tempC <= 37.5)
+  {
+    ledcWrite(pwmChannelServo, 32768);
+  }
+
+  else if (tempC > 37.5)
+  {
+    ledcWrite(pwmChannelServo, 65000);
+  }*/
+  int ang = (((contador / 180.0) * 2000) / 20000.0 * 65536.0) + 1634;
+  ledcWrite(pwmChannelServo, ang);
+  delay(15);
 }
