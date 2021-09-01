@@ -46,7 +46,6 @@
 int raw_LM35 = 0;    //valor tomado del sensor
 float voltage = 0.0; //voltaje del sensor
 float tempC = 0.0;   //temperatura en °C
-int ang = 7459; 
 
 //*****************************************************************************
 //ISR: interrupciones
@@ -73,7 +72,7 @@ void configurarPWMLedV(void);
 void configurarBoton1(void);
 void configurarPWMServo(void);
 void temperatura(void);
-void encenderLeds(void);
+void servoLeds(void);
 
 //*****************************************************************************
 //configuracion
@@ -97,15 +96,13 @@ void setup()
 void loop()
 {
   temperatura();
-  encenderLeds();
+  servoLeds();
   Serial.print("Raw Value = ");
   Serial.println(raw_LM35);
   Serial.print("Voltaje = ");
   Serial.println(voltage);
   Serial.print("Grados = ");
   Serial.println(tempC);
-  Serial.print("Angulo = ");
-  Serial.println(ang);
   delay(1000);
 }
 
@@ -176,9 +173,9 @@ void temperatura(void)
 }
 
 //*****************************************************************************
-//Función para encender leds
+//Función para encender leds y mover servo
 //*****************************************************************************
-void encenderLeds(void)
+void servoLeds(void)
 {
   if (tempC <= 37.0)
   {
@@ -201,6 +198,6 @@ void encenderLeds(void)
     ledcWrite(pwmChannelLedV, 0);
     ledcWrite(pwmChannelLedA, 0);
     ledcWrite(pwmChannelLedR, 255);
-    ledcWrite(pwmChannelServo, 2362);
+    ledcWrite(pwmChannelServo, 1362);
   }
 }
