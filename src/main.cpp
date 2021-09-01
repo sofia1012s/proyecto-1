@@ -182,7 +182,7 @@ void servoLeds(void)
     ledcWrite(pwmChannelLedV, 255);
     ledcWrite(pwmChannelLedA, 0);
     ledcWrite(pwmChannelLedR, 0);
-    ledcWrite(pwmChannelServo, 6731);
+    ledcWrite(pwmChannelServo, 6730);
   }
 
   else if (tempC > 37.0 && tempC <= 37.5)
