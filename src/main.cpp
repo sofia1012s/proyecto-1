@@ -9,7 +9,7 @@
 //Librerias
 //*****************************************************************************
 #include <Arduino.h> //libreria de arduino
-#include "esp_adc_cal.h"
+#include "esp_adc_cal.h" //libreria para ADC 
 
 //*****************************************************************************
 //Definicion etiquetas
