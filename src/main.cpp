@@ -46,7 +46,7 @@
 int raw_LM35 = 0;    //valor tomado del sensor
 float voltage = 0.0; //voltaje del sensor
 float tempC = 0.0;   //temperatura en °C
-int contador = 160;
+int ang = 7459; 
 
 //*****************************************************************************
 //ISR: interrupciones
@@ -60,17 +60,6 @@ void IRAM_ATTR ISRBoton1() //interrupción para botón 1 (Derecha)
   if (tiempo_interrupcion - ultimo_tiempo_interrupcion > 200)
   {
     raw_LM35 = analogRead(LM35); //tomar el dato del sensor y actualizarlo
-    contador -= 20;              //Disminuye 20 al contador de botón
-
-    if (contador == 180) //el valor no puede ser mayor a 180
-    {
-      contador = 180;
-    }
-
-    else if (contador == 0) //el valor no puede ser menor a 0
-    {
-      contador = 0;
-    }
   }
   ultimo_tiempo_interrupcion = tiempo_interrupcion; //actualiza el valor del tiempo de la interrupción
 }
@@ -85,7 +74,6 @@ void configurarBoton1(void);
 void configurarPWMServo(void);
 void temperatura(void);
 void encenderLeds(void);
-void moverServo();
 
 //*****************************************************************************
 //configuracion
@@ -108,20 +96,16 @@ void setup()
 //*****************************************************************************
 void loop()
 {
-
   temperatura();
   encenderLeds();
-  moverServo(); //función para mover servo
   Serial.print("Raw Value = ");
   Serial.println(raw_LM35);
   Serial.print("Voltaje = ");
   Serial.println(voltage);
   Serial.print("Grados = ");
   Serial.println(tempC);
-  Serial.print("Contador = ");
-  Serial.println(contador);
   Serial.print("Angulo = ");
-  Serial.println(contador);
+  Serial.println(ang);
   delay(1000);
 }
 
@@ -201,6 +185,7 @@ void encenderLeds(void)
     ledcWrite(pwmChannelLedV, 255);
     ledcWrite(pwmChannelLedA, 0);
     ledcWrite(pwmChannelLedR, 0);
+    ledcWrite(pwmChannelServo, 6731);
   }
 
   else if (tempC > 37.0 && tempC <= 37.5)
@@ -208,7 +193,7 @@ void encenderLeds(void)
     ledcWrite(pwmChannelLedV, 0);
     ledcWrite(pwmChannelLedA, 255);
     ledcWrite(pwmChannelLedR, 0);
-    ledcWrite(pwmChannelServo, 100);
+    ledcWrite(pwmChannelServo, 4546);
   }
 
   else if (tempC > 37.5)
@@ -216,29 +201,6 @@ void encenderLeds(void)
     ledcWrite(pwmChannelLedV, 0);
     ledcWrite(pwmChannelLedA, 0);
     ledcWrite(pwmChannelLedR, 255);
-    ledcWrite(pwmChannelServo, 200);
+    ledcWrite(pwmChannelServo, 2362);
   }
-}
-
-//*****************************************************************************
-//Función para mover servo con el contador
-//*****************************************************************************
-void moverServo(void)
-{
-  /*if (tempC <= 37.0)
-  {
-    ledcWrite(pwmChannelServo, 0);
-  }
-
-  else if (tempC > 37.0 && tempC <= 37.5)
-  {
-    ledcWrite(pwmChannelServo, 32768);
-  }
-
-  else if (tempC > 37.5)
-  {
-    ledcWrite(pwmChannelServo, 65000);
-  }*/
-  int ang = (((contador / 180.0) * 2000) / 20000.0 * 65536.0) + 1634;
-  ledcWrite(pwmChannelServo, ang);
 }
