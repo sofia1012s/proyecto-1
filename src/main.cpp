@@ -9,6 +9,7 @@
 //Librerias
 //*****************************************************************************
 #include <Arduino.h> //libreria de arduino
+#include "esp_adc_cal.h"
 
 //*****************************************************************************
 //Definicion etiquetas
@@ -46,6 +47,7 @@
 int raw_LM35 = 0;    //valor tomado del sensor
 float voltage = 0.0; //voltaje del sensor
 float tempC = 0.0;   //temperatura en °C
+boolean presionado = 0;
 
 //*****************************************************************************
 //ISR: interrupciones
@@ -58,7 +60,7 @@ void IRAM_ATTR ISRBoton1() //interrupción para botón 1 (Derecha)
   //Si la interrupcion dura menos de 200ms, asumir que es un rebote e ignorar
   if (tiempo_interrupcion - ultimo_tiempo_interrupcion > 200)
   {
-    raw_LM35 = analogRead(LM35); //tomar el dato del sensor y actualizarlo
+    presionado = 1;
   }
   ultimo_tiempo_interrupcion = tiempo_interrupcion; //actualiza el valor del tiempo de la interrupción
 }
@@ -71,6 +73,7 @@ void configurarPWMLedA(void);
 void configurarPWMLedV(void);
 void configurarBoton1(void);
 void configurarPWMServo(void);
+float readVoltage(void);
 void temperatura(void);
 void servoLeds(void);
 
@@ -168,8 +171,12 @@ void configurarPWMServo(void)
 //*****************************************************************************
 void temperatura(void)
 {
-  voltage = raw_LM35 * 3.3 / 4095.0;
-  tempC = voltage / 0.010;
+  if (presionado == 1)
+  {
+    voltage = analogReadMilliVolts(LM35);
+    tempC = voltage / 10;
+    presionado = 0;
+  }
 }
 
 //*****************************************************************************
@@ -201,3 +208,7 @@ void servoLeds(void)
     ledcWrite(pwmChannelServo, 1362);
   }
 }
+
+//*****************************************************************************
+//Función para encender leds y mover servo
+//*****************************************************************************
