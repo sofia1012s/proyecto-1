@@ -241,5 +241,4 @@ void moverServo(void)
   }*/
   int ang = (((contador / 180.0) * 2000) / 20000.0 * 65536.0) + 1634;
   ledcWrite(pwmChannelServo, ang);
-  delay(15);
 }
