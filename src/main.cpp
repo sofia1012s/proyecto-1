@@ -8,8 +8,9 @@
 //*****************************************************************************
 //Librerias
 //*****************************************************************************
-#include <Arduino.h> //libreria de arduino
-#include "esp_adc_cal.h" //libreria para ADC 
+#include <Arduino.h>     //libreria de arduino
+#include "esp_adc_cal.h" //libreria para ADC
+#include "Display7Seg.h" //libreria para display 7 segmentos
 
 //*****************************************************************************
 //Definicion etiquetas
@@ -41,13 +42,27 @@
 #define resolutionPWMLedR 8
 #define pinPWMLedR 25
 
+//7 segmentos
+#define a 4
+#define b 16
+#define c 5
+#define d 19
+#define e 18
+#define f 2
+#define g 15
+#define dP 17
+
+#define display1 1
+#define display2 23
+#define display3 22
+
 //*****************************************************************************
 //Varibles globales
 //*****************************************************************************
-int raw_LM35 = 0;    //valor tomado del sensor
-float voltage = 0.0; //voltaje del sensor
-float tempC = 0.0;   //temperatura en °C
-boolean presionado = 0;
+int raw_LM35 = 0;       //valor tomado del sensor
+float voltage = 0.0;    //voltaje del sensor
+float tempC = 0.0;      //temperatura en °C
+boolean presionado = 0; //botón ha sido presionado
 
 //*****************************************************************************
 //ISR: interrupciones
@@ -82,6 +97,7 @@ void servoLeds(void);
 //*****************************************************************************
 void setup()
 {
+  configurarDisplay(a, b, c, d, e, f, g, dP);
   pinMode(boton1, INPUT_PULLUP);
   Serial.begin(115200);
   configurarBoton1();
@@ -91,6 +107,16 @@ void setup()
   configurarPWMLedR();
   configurarPWMLedA();
   configurarPWMLedV();
+
+  pinMode(display1, OUTPUT);
+  pinMode(display2, OUTPUT);
+  pinMode(display3, OUTPUT);
+
+  digitalWrite(display1, LOW);
+  digitalWrite(display2, LOW);
+  digitalWrite(display3, LOW);
+
+  desplegar7Seg(0);
 }
 
 //*****************************************************************************
@@ -208,7 +234,3 @@ void servoLeds(void)
     ledcWrite(pwmChannelServo, 1362);
   }
 }
-
-//*****************************************************************************
-//Función para encender leds y mover servo
-//*****************************************************************************
