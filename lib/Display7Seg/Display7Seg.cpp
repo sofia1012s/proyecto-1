@@ -46,7 +46,6 @@ void desplegar7Seg(uint8_t digito)
         digitalWrite(pinE, LOW);
         digitalWrite(pinF, LOW);
         digitalWrite(pinG, HIGH);
-        digitalWrite(pindP, LOW);
         break;
 
     case 1:
@@ -57,8 +56,8 @@ void desplegar7Seg(uint8_t digito)
         digitalWrite(pinE, HIGH);
         digitalWrite(pinF, HIGH);
         digitalWrite(pinG, HIGH);
-        digitalWrite(pindP, HIGH);
         break;
+
     case 2:
         digitalWrite(pinA, LOW);
         digitalWrite(pinB, LOW);
@@ -67,7 +66,56 @@ void desplegar7Seg(uint8_t digito)
         digitalWrite(pinE, LOW);
         digitalWrite(pinF, HIGH);
         digitalWrite(pinG, LOW);
-        digitalWrite(pindP, HIGH);
+        break;
+
+    case 3:
+        digitalWrite(pinA, LOW);
+        digitalWrite(pinB, LOW);
+        digitalWrite(pinC, LOW);
+        digitalWrite(pinD, LOW);
+        digitalWrite(pinE, HIGH);
+        digitalWrite(pinF, HIGH);
+        digitalWrite(pinG, LOW);
+        break;
+
+    case 4:
+        digitalWrite(pinA, HIGH);
+        digitalWrite(pinB, LOW);
+        digitalWrite(pinC, LOW);
+        digitalWrite(pinD, HIGH);
+        digitalWrite(pinE, HIGH);
+        digitalWrite(pinF, LOW);
+        digitalWrite(pinG, LOW);
+        break;
+
+    case 5:
+        digitalWrite(pinA, LOW);
+        digitalWrite(pinB, HIGH);
+        digitalWrite(pinC, LOW);
+        digitalWrite(pinD, LOW);
+        digitalWrite(pinE, HIGH);
+        digitalWrite(pinF, LOW);
+        digitalWrite(pinG, LOW);
+        break;
+
+    case 6:
+        digitalWrite(pinA, LOW);
+        digitalWrite(pinB, HIGH);
+        digitalWrite(pinC, LOW);
+        digitalWrite(pinD, LOW);
+        digitalWrite(pinE, LOW);
+        digitalWrite(pinF, LOW);
+        digitalWrite(pinG, LOW);
+        break;
+
+    case 7:
+        digitalWrite(pinA, LOW);
+        digitalWrite(pinB, LOW);
+        digitalWrite(pinC, LOW);
+        digitalWrite(pinD, HIGH);
+        digitalWrite(pinE, HIGH);
+        digitalWrite(pinF, HIGH);
+        digitalWrite(pinG, HIGH);
         break;
 
     case 8:
@@ -78,10 +126,26 @@ void desplegar7Seg(uint8_t digito)
         digitalWrite(pinE, LOW);
         digitalWrite(pinF, LOW);
         digitalWrite(pinG, LOW);
-        digitalWrite(pindP, LOW);
+        break;
+
+    case 9:
+        digitalWrite(pinA, LOW);
+        digitalWrite(pinB, LOW);
+        digitalWrite(pinC, LOW);
+        digitalWrite(pinD, LOW);
+        digitalWrite(pinE, HIGH);
+        digitalWrite(pinF, LOW);
+        digitalWrite(pinG, LOW);
         break;
 
     default:
+        digitalWrite(pinA, LOW);
+        digitalWrite(pinB, LOW);
+        digitalWrite(pinC, LOW);
+        digitalWrite(pinD, LOW);
+        digitalWrite(pinE, LOW);
+        digitalWrite(pinF, LOW);
+        digitalWrite(pinG, HIGH);
         break;
     }
 }
@@ -98,4 +162,3 @@ void desplegarPunto(boolean punto)
         digitalWrite(pindP, HIGH);
     }
 }
-
