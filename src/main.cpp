@@ -62,8 +62,6 @@
 //*****************************************************************************
 //Varibles globales
 //*****************************************************************************
-int raw_LM35 = 0;    //valor tomado del sensor
-float voltage = 0.0; //voltaje del sensor
 
 //variables para la temperatura
 float tempC = 0.0;
@@ -72,6 +70,12 @@ int unidades = 0;
 int decimal = 0;
 
 boolean presionado = 0; //botón ha sido presionado
+
+//Variables para filtro Medio Móvil Exponencial
+int adcRaw = 0;            //Valor Crudo
+double adcFiltradoEMA = 0; // S(0) = Y(0)
+double alpha = 0.09;       // Factor de suavizado
+float voltage = 0.0;       //Valor de voltaje filtrado
 
 //Temporizador
 hw_timer_t *timer = NULL;
@@ -87,6 +91,7 @@ void configurarBoton1(void);
 void configurarPWMServo(void);
 float readVoltage(void);
 void temperatura(void);
+void emaADC(void);
 void convertirTemp(void);
 void servoLeds(void);
 void display7Seg(int contadorTimer);
@@ -125,6 +130,7 @@ void IRAM_ATTR ISRTimer0() //interrupción para timer
 //*****************************************************************************
 void setup()
 {
+  //Temporizador
   configurarTimer();
 
   //Botón
@@ -155,10 +161,11 @@ void setup()
 //*****************************************************************************
 void loop()
 {
-  temperatura();
-  convertirTemp();
-  servoLeds();
-  display7Seg(contadorTimer);
+  emaADC();                   //Tomar temperatura y filtrarla
+  temperatura();              //Tomar temperatura para mostrarla en displays
+  convertirTemp();            //Convertir valores de temperatura para displays
+  servoLeds();                //Mover servo y encender leds según el valor
+  display7Seg(contadorTimer); //Mostrar la temperatura en los displays
 }
 
 //******************************************************************************
@@ -186,7 +193,7 @@ void configurarTimer(void)
 }
 
 //*****************************************************************************
-//Función para configurar interrupción en botón 1
+//Configuración interrupción en botón 1
 //*****************************************************************************
 void configurarBoton1(void)
 {
@@ -195,7 +202,7 @@ void configurarBoton1(void)
 }
 
 //*****************************************************************************
-//Función para configurar módulo PWM Led Rojo
+//Configuración módulo PWM Led Rojo
 //*****************************************************************************
 void configurarPWMLedR(void)
 {
@@ -207,7 +214,7 @@ void configurarPWMLedR(void)
 }
 
 //*****************************************************************************
-//Función para configurar módulo PWM Led Verde
+//Configuración módulo PWM Led Verde
 //*****************************************************************************
 void configurarPWMLedV(void)
 {
@@ -219,7 +226,7 @@ void configurarPWMLedV(void)
 }
 
 //*****************************************************************************
-//Función para configurar módulo PWM Led Amarillo
+//Configuración módulo PWM Led Amarillo
 //*****************************************************************************
 void configurarPWMLedA(void)
 {
@@ -231,7 +238,7 @@ void configurarPWMLedA(void)
 }
 
 //*****************************************************************************
-//Función para configurar módulo PWM de Servo
+//Configuración módulo PWM de Servo
 //*****************************************************************************
 void configurarPWMServo(void)
 {
@@ -242,6 +249,15 @@ void configurarPWMServo(void)
   ledcAttachPin(pinPWMServo, pwmChannelServo);
 }
 
+//****************************************************************
+// Filtro media Móvil exponencial EMA
+//****************************************************************
+void emaADC(void)
+{
+  adcRaw = analogReadMilliVolts(LM35);
+  adcFiltradoEMA = (alpha * adcRaw) + ((1.0 - alpha) * adcFiltradoEMA);
+}
+
 //*****************************************************************************
 //Función para tomar el valor de la temperatura
 //*****************************************************************************
@@ -249,10 +265,11 @@ void temperatura(void)
 {
   if (presionado == 1)
   {
-    voltage = analogReadMilliVolts(LM35);
+    voltage = adcFiltradoEMA;
     presionado = 0;
   }
 }
+
 //*****************************************************************************
 //Función para convertir el valor de la temperatura
 //*****************************************************************************
@@ -266,6 +283,7 @@ void convertirTemp(void)
   temp = temp - (unidades * 10);
   decimal = temp;
 }
+
 //*****************************************************************************
 //Función para encender leds y mover servo
 //*****************************************************************************
