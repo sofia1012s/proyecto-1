@@ -52,22 +52,52 @@
 #define g 15
 #define dP 17
 
-#define display1 1
+#define display1 3
 #define display2 23
 #define display3 22
 
 //*****************************************************************************
 //Varibles globales
 //*****************************************************************************
-int raw_LM35 = 0;       //valor tomado del sensor
-float voltage = 0.0;    //voltaje del sensor
-float tempC = 0.0;      //temperatura en °C
+int raw_LM35 = 0;    //valor tomado del sensor
+float voltage = 0.0; //voltaje del sensor
+
+//variables para la temperatura
+float tempC = 0.0;
+int decenas = 0;
+int unidades = 0;
+int decimal = 0;
+
+int period = 500;
+unsigned long time_now = 0;
+
 boolean presionado = 0; //botón ha sido presionado
+
+//Temporizador
+hw_timer_t *timer = NULL;
+int bandera = 0;
+
+//*****************************************************************************
+//Prototipos de funcion
+//*****************************************************************************
+void configurarPWMLedR(void);
+void configurarPWMLedA(void);
+void configurarPWMLedV(void);
+void configurarBoton1(void);
+void configurarPWMServo(void);
+float readVoltage(void);
+void temperatura(void);
+void convertirTemp(void);
+void servoLeds(void);
+void display7Seg(void);
+void configurarTimer(void);
+void IRAM_ATTR ISRTimer0();
+void IRAM_ATTR ISRBoton1();
 
 //*****************************************************************************
 //ISR: interrupciones
 //*****************************************************************************
-void IRAM_ATTR ISRBoton1() //interrupción para botón 1 (Derecha)
+void IRAM_ATTR ISRBoton1() //interrupción para botón 1
 {
   static unsigned long ultimo_tiempo_interrupcion = 0; //último tiempo de la interrupción
   unsigned long tiempo_interrupcion = millis();        //tiempo actual de la interrupción
@@ -80,26 +110,41 @@ void IRAM_ATTR ISRBoton1() //interrupción para botón 1 (Derecha)
   ultimo_tiempo_interrupcion = tiempo_interrupcion; //actualiza el valor del tiempo de la interrupción
 }
 
-//*****************************************************************************
-//Prototipos de funcion
-//*****************************************************************************
-void configurarPWMLedR(void);
-void configurarPWMLedA(void);
-void configurarPWMLedV(void);
-void configurarBoton1(void);
-void configurarPWMServo(void);
-float readVoltage(void);
-void temperatura(void);
-void servoLeds(void);
+void IRAM_ATTR ISRTimer0() //temporizador
+{
+  switch (bandera)
+  {
+  case 0:
+    bandera = 1;
+    break;
+  case 1:
+    bandera = 2;
+    break;
+
+  case 2:
+    bandera = 3;
+    break;
+
+  case 3:
+    bandera = 0;
+    break;
+
+  default:
+    bandera = 0;
+    break;
+  }
+}
 
 //*****************************************************************************
 //configuracion
 //*****************************************************************************
 void setup()
 {
-  configurarDisplay(a, b, c, d, e, f, g, dP);
-  pinMode(boton1, INPUT_PULLUP);
   Serial.begin(115200);
+  configurarTimer();
+
+  //Botón
+  pinMode(boton1, INPUT_PULLUP);
   configurarBoton1();
 
   //Señales PWM
@@ -108,6 +153,8 @@ void setup()
   configurarPWMLedA();
   configurarPWMLedV();
 
+  //Display 7 Segmentos
+  configurarDisplay(a, b, c, d, e, f, g, dP);
   pinMode(display1, OUTPUT);
   pinMode(display2, OUTPUT);
   pinMode(display3, OUTPUT);
@@ -125,14 +172,46 @@ void setup()
 void loop()
 {
   temperatura();
+  convertirTemp();
   servoLeds();
+  display7Seg();
   Serial.print("Raw Value = ");
   Serial.println(raw_LM35);
   Serial.print("Voltaje = ");
   Serial.println(voltage);
   Serial.print("Grados = ");
   Serial.println(tempC);
-  delay(1000);
+  Serial.print("decenas = ");
+  Serial.println(decenas);
+  Serial.print("unidades = ");
+  Serial.println(unidades);
+  Serial.print("decimal = ");
+  Serial.println(decimal);
+}
+
+//******************************************************************************
+// Configuración Timer
+//******************************************************************************
+void configurarTimer(void)
+{
+  // Fosc = 80 MHz -> 80,000,000 Hz
+  // significa que se ejecuta 80,000,000 ciclos por segundo
+  // Si seleccionamos un prescaler de 80
+  // entonces 80,000,000 / 80 = 1,000,000 Hz
+  // Si obtenemos el período T = 1 / F
+  // T = 1 / 1,000,000 = 1 uSeg
+
+  // Paso 2: Seleccionamos el Timer 0, usamos prescaler 80, flanco de subida
+  timer = timerBegin(0, 80, true);
+
+  // Paso 3: le asignamos el handler de interrupción
+  timerAttachInterrupt(timer, &ISRTimer0, true);
+
+  // Paso 4: programamos la alarma para que se de cada 250mS
+  timerAlarmWrite(timer, 250000, true);
+
+  // Paso 5: Iniciamos la alarma
+  timerAlarmEnable(timer);
 }
 
 //*****************************************************************************
@@ -193,18 +272,29 @@ void configurarPWMServo(void)
 }
 
 //*****************************************************************************
-//Función para convertir el valor de la temperatura
+//Función para tomar el valor de la temperatura
 //*****************************************************************************
 void temperatura(void)
 {
   if (presionado == 1)
   {
     voltage = analogReadMilliVolts(LM35);
-    tempC = voltage / 10;
     presionado = 0;
   }
 }
-
+//*****************************************************************************
+//Función para convertir el valor de la temperatura
+//*****************************************************************************
+void convertirTemp(void)
+{
+  tempC = voltage / 10;
+  int temp = tempC * 10; //variable temporal
+  decenas = temp / 100;
+  temp = temp - (decenas * 100);
+  unidades = temp / 10;
+  temp = temp - (unidades * 10);
+  decimal = temp;
+}
 //*****************************************************************************
 //Función para encender leds y mover servo
 //*****************************************************************************
@@ -233,4 +323,33 @@ void servoLeds(void)
     ledcWrite(pwmChannelLedR, 255);
     ledcWrite(pwmChannelServo, 1362);
   }
+}
+
+//*****************************************************************************
+//Función para encender displays
+//*****************************************************************************
+void display7Seg(void)
+{
+  digitalWrite(display1, HIGH);
+  digitalWrite(display2, LOW);
+  digitalWrite(display3, LOW);
+  desplegarPunto(0);
+  desplegar7Seg(decenas);
+  delay(500);
+
+  //Desplegar unidades
+  digitalWrite(display1, LOW);
+  digitalWrite(display2, HIGH);
+  digitalWrite(display3, LOW);
+  desplegarPunto(1);
+  desplegar7Seg(unidades);
+  delay(500);
+
+  //Desplegar decimal
+  digitalWrite(display1, LOW);
+  digitalWrite(display2, LOW);
+  digitalWrite(display3, HIGH);
+  desplegarPunto(0);
+  desplegar7Seg(decimal);
+  delay(500);  
 }
