@@ -56,6 +56,9 @@
 #define display2 23
 #define display3 22
 
+//Prescaler
+#define prescaler 80
+
 //*****************************************************************************
 //Varibles globales
 //*****************************************************************************
@@ -68,14 +71,11 @@ int decenas = 0;
 int unidades = 0;
 int decimal = 0;
 
-int period = 500;
-unsigned long time_now = 0;
-
 boolean presionado = 0; //botón ha sido presionado
 
 //Temporizador
 hw_timer_t *timer = NULL;
-int bandera = 0;
+int contadorTimer = 0;
 
 //*****************************************************************************
 //Prototipos de funcion
@@ -89,7 +89,7 @@ float readVoltage(void);
 void temperatura(void);
 void convertirTemp(void);
 void servoLeds(void);
-void display7Seg(void);
+void display7Seg(int contadorTimer);
 void configurarTimer(void);
 void IRAM_ATTR ISRTimer0();
 void IRAM_ATTR ISRBoton1();
@@ -110,28 +110,13 @@ void IRAM_ATTR ISRBoton1() //interrupción para botón 1
   ultimo_tiempo_interrupcion = tiempo_interrupcion; //actualiza el valor del tiempo de la interrupción
 }
 
-void IRAM_ATTR ISRTimer0() //temporizador
+void IRAM_ATTR ISRTimer0() //interrupción para timer
 {
-  switch (bandera)
+  contadorTimer++; //aumenta el contador de timer
+
+  if (contadorTimer > 2) //si es mayor a 2 regresa a cero
   {
-  case 0:
-    bandera = 1;
-    break;
-  case 1:
-    bandera = 2;
-    break;
-
-  case 2:
-    bandera = 3;
-    break;
-
-  case 3:
-    bandera = 0;
-    break;
-
-  default:
-    bandera = 0;
-    break;
+    contadorTimer = 0;
   }
 }
 
@@ -140,7 +125,6 @@ void IRAM_ATTR ISRTimer0() //temporizador
 //*****************************************************************************
 void setup()
 {
-  Serial.begin(115200);
   configurarTimer();
 
   //Botón
@@ -174,19 +158,7 @@ void loop()
   temperatura();
   convertirTemp();
   servoLeds();
-  display7Seg();
-  Serial.print("Raw Value = ");
-  Serial.println(raw_LM35);
-  Serial.print("Voltaje = ");
-  Serial.println(voltage);
-  Serial.print("Grados = ");
-  Serial.println(tempC);
-  Serial.print("decenas = ");
-  Serial.println(decenas);
-  Serial.print("unidades = ");
-  Serial.println(unidades);
-  Serial.print("decimal = ");
-  Serial.println(decimal);
+  display7Seg(contadorTimer);
 }
 
 //******************************************************************************
@@ -194,23 +166,22 @@ void loop()
 //******************************************************************************
 void configurarTimer(void)
 {
-  // Fosc = 80 MHz -> 80,000,000 Hz
-  // significa que se ejecuta 80,000,000 ciclos por segundo
-  // Si seleccionamos un prescaler de 80
-  // entonces 80,000,000 / 80 = 1,000,000 Hz
-  // Si obtenemos el período T = 1 / F
-  // T = 1 / 1,000,000 = 1 uSeg
+  //Fosc = 80MHz = 80,000,000 Hz
+  //Fosc / Prescaler = 80,000,000 / 80 = 1,000,000
+  //Tosc = 1/Fosc = 1uS
 
-  // Paso 2: Seleccionamos el Timer 0, usamos prescaler 80, flanco de subida
-  timer = timerBegin(0, 80, true);
+  //Paso 2: Seleccionar Timer
+  //Timer 0, prescaler = 80, flanco de subida
+  timer = timerBegin(0, prescaler, true);
 
-  // Paso 3: le asignamos el handler de interrupción
+  //paso 3: Asignar el handler de la interrupción
   timerAttachInterrupt(timer, &ISRTimer0, true);
 
-  // Paso 4: programamos la alarma para que se de cada 250mS
-  timerAlarmWrite(timer, 250000, true);
+  //Paso 4: Programar alarma
+  //Tic = 1uS
+  timerAlarmWrite(timer, 10, true);
 
-  // Paso 5: Iniciamos la alarma
+  //Paso 5: Iniciar la alarma
   timerAlarmEnable(timer);
 }
 
@@ -220,7 +191,7 @@ void configurarTimer(void)
 void configurarBoton1(void)
 {
   //me coloca una interrupción en el botón 1 (durante el cambio de alto a bajo)
-  attachInterrupt(digitalPinToInterrupt(boton1), ISRBoton1, RISING);
+  attachInterrupt(digitalPinToInterrupt(boton1), ISRBoton1, FALLING);
 }
 
 //*****************************************************************************
@@ -328,28 +299,38 @@ void servoLeds(void)
 //*****************************************************************************
 //Función para encender displays
 //*****************************************************************************
-void display7Seg(void)
+void display7Seg(int contadorTimer)
 {
-  digitalWrite(display1, HIGH);
-  digitalWrite(display2, LOW);
-  digitalWrite(display3, LOW);
-  desplegarPunto(0);
-  desplegar7Seg(decenas);
-  delay(500);
+  switch (contadorTimer)
+  {
+  case 0:
+    //desplegar decenas
+    digitalWrite(display1, HIGH);
+    digitalWrite(display2, LOW);
+    digitalWrite(display3, LOW);
+    desplegarPunto(0);
+    desplegar7Seg(decenas);
+    break;
 
-  //Desplegar unidades
-  digitalWrite(display1, LOW);
-  digitalWrite(display2, HIGH);
-  digitalWrite(display3, LOW);
-  desplegarPunto(1);
-  desplegar7Seg(unidades);
-  delay(500);
+  case 1:
+    //Desplegar unidades
+    digitalWrite(display1, LOW);
+    digitalWrite(display2, HIGH);
+    digitalWrite(display3, LOW);
+    desplegarPunto(1);
+    desplegar7Seg(unidades);
+    break;
 
-  //Desplegar decimal
-  digitalWrite(display1, LOW);
-  digitalWrite(display2, LOW);
-  digitalWrite(display3, HIGH);
-  desplegarPunto(0);
-  desplegar7Seg(decimal);
-  delay(500);  
+  case 2:
+    //Desplegar decimal
+    digitalWrite(display1, LOW);
+    digitalWrite(display2, LOW);
+    digitalWrite(display3, HIGH);
+    desplegarPunto(0);
+    desplegar7Seg(decimal);
+    break;
+
+  default:
+    break;
+  }
 }
