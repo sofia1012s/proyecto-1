@@ -42,7 +42,7 @@
 #define resolutionPWMLedR 8
 #define pinPWMLedR 25
 
-//7 segmentos
+//Display 7 segmentos
 #define a 4
 #define b 16
 #define c 5
