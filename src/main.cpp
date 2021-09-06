@@ -72,7 +72,7 @@ int decimal = 0;
 boolean presionado = 0; //botón ha sido presionado
 
 //Variables para filtro Medio Móvil Exponencial
-int adcRaw = 0;            //Valor Crudo
+float adcRaw = 0.0;            //Valor Crudo
 double adcFiltradoEMA = 0; // S(0) = Y(0)
 double alpha = 0.09;       // Factor de suavizado
 float voltage = 0.0;       //Valor de voltaje filtrado
