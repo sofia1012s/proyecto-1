@@ -11,6 +11,7 @@
 #include <Arduino.h>     //libreria de arduino
 #include "esp_adc_cal.h" //libreria para ADC
 #include "Display7Seg.h" //libreria para display 7 segmentos
+#include "AdafruitIO_WiFi.h" //libreria para Adafruit
 
 //*****************************************************************************
 //Definicion etiquetas
@@ -60,6 +61,20 @@
 #define prescaler 80
 
 //*****************************************************************************
+//Adafruit
+//*****************************************************************************
+
+/************************ Adafruit IO Config *******************************/
+#define IO_USERNAME "sal19236"
+#define IO_KEY ""
+
+/******************************* WIFI **************************************/
+#define WIFI_SSID "Familia Salguero"
+#define WIFI_PASS "Salguero2019"
+
+AdafruitIO_WiFi io(IO_USERNAME, IO_KEY, WIFI_SSID, WIFI_PASS);
+
+//*****************************************************************************
 //Varibles globales
 //*****************************************************************************
 
@@ -72,7 +87,7 @@ int decimal = 0;
 boolean presionado = 0; //botón ha sido presionado
 
 //Variables para filtro Medio Móvil Exponencial
-float adcRaw = 0.0;            //Valor Crudo
+float adcRaw = 0.0;        //Valor Crudo
 double adcFiltradoEMA = 0; // S(0) = Y(0)
 double alpha = 0.09;       // Factor de suavizado
 float voltage = 0.0;       //Valor de voltaje filtrado
