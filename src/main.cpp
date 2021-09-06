@@ -8,9 +8,9 @@
 //*****************************************************************************
 //Librerias
 //*****************************************************************************
-#include <Arduino.h>     //libreria de arduino
-#include "esp_adc_cal.h" //libreria para ADC
-#include "Display7Seg.h" //libreria para display 7 segmentos
+#include <Arduino.h>         //libreria de arduino
+#include "esp_adc_cal.h"     //libreria para ADC
+#include "Display7Seg.h"     //libreria para display 7 segmentos
 #include "AdafruitIO_WiFi.h" //libreria para Adafruit
 
 //*****************************************************************************
@@ -65,8 +65,8 @@
 //*****************************************************************************
 
 /************************ Adafruit IO Config *******************************/
-#define IO_USERNAME "sal19236"
-#define IO_KEY ""
+//#define IO_USERNAME "sal19236"
+//#define IO_KEY "aio_KDgF05MqGAh9weMoZslP8mq26LG8"
 
 /******************************* WIFI **************************************/
 #define WIFI_SSID "Familia Salguero"
@@ -98,26 +98,47 @@ double adcFiltradoEMA = 0; // S(0) = Y(0)
 double alpha = 0.09;       // Factor de suavizado
 float voltage = 0.0;       //Valor de voltaje filtrado
 
-//Temporizador
+//Temporizadores
 hw_timer_t *timer = NULL;
+hw_timer_t *timer1 = NULL;
+hw_timer_t *timer2 = NULL;
 int contadorTimer = 0;
+int contadorTimer1 = 0;
+int contadorTimer2 = 0;
 
 //*****************************************************************************
 //Prototipos de funcion
 //*****************************************************************************
+//Leds
 void configurarPWMLedR(void);
 void configurarPWMLedA(void);
 void configurarPWMLedV(void);
+
+//Botón
 void configurarBoton1(void);
+
+//Servo
 void configurarPWMServo(void);
+void servoLeds(void);
+
+//Temperatura
 float readVoltage(void);
 void temperatura(void);
 void emaADC(void);
 void convertirTemp(void);
-void servoLeds(void);
+
+//Displays
 void display7Seg(int contadorTimer);
+
+//Timers
 void configurarTimer(void);
+void configurarTimer1(void);
+void configurarTimer2(void);
+
+//interrupciones
 void IRAM_ATTR ISRTimer0();
+void IRAM_ATTR ISRTimer1();
+void IRAM_ATTR ISRTimer2();
 void IRAM_ATTR ISRBoton1();
 
 //*****************************************************************************
@@ -136,7 +157,7 @@ void IRAM_ATTR ISRBoton1() //interrupción para botón 1
   ultimo_tiempo_interrupcion = tiempo_interrupcion; //actualiza el valor del tiempo de la interrupción
 }
 
-void IRAM_ATTR ISRTimer0() //interrupción para timer
+void IRAM_ATTR ISRTimer0() //interrupción para timer de displays
 {
   contadorTimer++; //aumenta el contador de timer
 
@@ -146,13 +167,57 @@ void IRAM_ATTR ISRTimer0() //interrupción para timer
   }
 }
 
+void IRAM_ATTR ISRTimer1() //interrupción para timer de setup Adafruit
+{
+  contadorTimer1 = 1;
+
+  if (contadorTimer1 > 1)
+  {
+    contadorTimer1 = 0;
+  }
+}
+
+void IRAM_ATTR ISRTimer2() //interrupción para timer de loop Adafruit
+{
+  contadorTimer2 = 1;
+  if (contadorTimer2 > 1)
+  {
+    contadorTimer2 = 0;
+  }
+}
+
 //*****************************************************************************
 //configuracion
 //*****************************************************************************
 void setup()
 {
-  //Temporizador
+  //Setup de adafruit
+  // start the serial connection
+  Serial.begin(115200);
+
+  Serial.print("Connecting to Adafruit IO");
+
+  // connect to io.adafruit.com
+  io.connect();
+
+  // wait for a connection
+  while (io.status() < AIO_CONNECTED)
+  {
+    if (contadorTimer1 == 1)
+    {
+      Serial.print(".");
+      contadorTimer1 = 0;
+    }
+  }
+
+  // we are connected
+  Serial.println();
+  Serial.println(io.statusText());
+
+  //Temporizadores
   configurarTimer();
+  configurarTimer1();
+  //configurarTimer2();
 
   //Botón
   pinMode(boton1, INPUT_PULLUP);
@@ -190,9 +255,9 @@ void loop()
 }
 
 //******************************************************************************
-// Configuración Timer
+// Configuración Timers
 //******************************************************************************
-void configurarTimer(void)
+void configurarTimer(void) //Timer para displays
 {
   //Fosc = 80MHz = 80,000,000 Hz
   //Fosc / Prescaler = 80,000,000 / 80 = 1,000,000
@@ -213,6 +278,26 @@ void configurarTimer(void)
   timerAlarmEnable(timer);
 }
 
+void configurarTimer1(void) //Timer para setup Adafruit
+{
+  //Fosc = 80MHz = 80,000,000 Hz
+  //Fosc / Prescaler = 80,000,000 / 80 = 1,000,000
+  //Tosc = 1/Fosc = 1uS
+
+  //Paso 2: Seleccionar Timer
+  //Timer 0, prescaler = 80, flanco de subida
+  timer1 = timerBegin(1, prescaler, true);
+
+  //paso 3: Asignar el handler de la interrupción
+  timerAttachInterrupt(timer1, &ISRTimer1, true);
+
+  //Paso 4: Programar alarma
+  //Tic = 1uS   500ms = 500000 uS
+  timerAlarmWrite(timer1, 500000, true);
+
+  //Paso 5: Iniciar la alarma
+  timerAlarmEnable(timer1);
+}
 //*****************************************************************************
 //Configuración interrupción en botón 1
 //*****************************************************************************
