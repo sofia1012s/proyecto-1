@@ -6,15 +6,14 @@
 //*****************************************************************************
 
 //*****************************************************************************
-//                              Librerias
+//Librerias
 //*****************************************************************************
-#include "AdafruitIO_WiFi.h"
 #include <Arduino.h>     //libreria de arduino
 #include "esp_adc_cal.h" //libreria para ADC
 #include "Display7Seg.h" //libreria para display 7 segmentos
 
 //*****************************************************************************
-//                          Definicion etiquetas
+//Definicion etiquetas
 //*****************************************************************************
 #define LM35 32   //toma de datos en sensor
 #define boton1 27 //Botón para parte 1
@@ -60,27 +59,8 @@
 //Prescaler
 #define prescaler 80
 
-/************************ Adafruit IO Config *******************************/
-#define IO_USERNAME "sal19236"
-#define IO_KEY "aio_imWP87Jqur0BP6zIqDjXMgTskq3A"
-
-/******************************* WIFI **************************************/
-#define WIFI_SSID "Familia Salguero"
-#define WIFI_PASS "Salguero 2019"
-
-AdafruitIO_WiFi io(IO_USERNAME, IO_KEY, WIFI_SSID, WIFI_PASS);
-AdafruitIO_Feed *ledVerdeFeed = io.feed("pinpwmledv");
-AdafruitIO_Feed *ledAmarilloFeed = io.feed("pinpwmleda");
-AdafruitIO_Feed *ledRojoFeed = io.feed("pinpwmledr");
-AdafruitIO_Feed *temperaturaFeed = io.feed("tempc");
-
-#define INTERVAL_MESSAGE1 5000
-#define INTERVAL_MESSAGE2 7000
-#define INTERVAL_MESSAGE3 11000
-#define INTERVAL_MESSAGE4 13000
-
 //*****************************************************************************
-//                            Varibles globales
+//Varibles globales
 //*****************************************************************************
 
 //variables para la temperatura
@@ -102,7 +82,7 @@ hw_timer_t *timer = NULL;
 int contadorTimer = 0;
 
 //*****************************************************************************
-//                          Prototipos de funcion
+//Prototipos de funcion
 //*****************************************************************************
 void configurarPWMLedR(void);
 void configurarPWMLedA(void);
@@ -120,7 +100,7 @@ void IRAM_ATTR ISRTimer0();
 void IRAM_ATTR ISRBoton1();
 
 //*****************************************************************************
-//                          ISR: interrupciones
+//ISR: interrupciones
 //*****************************************************************************
 void IRAM_ATTR ISRBoton1() //interrupción para botón 1
 {
@@ -146,7 +126,7 @@ void IRAM_ATTR ISRTimer0() //interrupción para timer
 }
 
 //*****************************************************************************
-//                            Configuración
+//configuracion
 //*****************************************************************************
 void setup()
 {
@@ -174,32 +154,10 @@ void setup()
   digitalWrite(display3, LOW);
 
   desplegar7Seg(0);
-
-  // start the serial connection
-  Serial.begin(115200);
-
-  // wait for serial monitor to open
-  while (!Serial)
-    ;
-
-  Serial.print("Connecting to Adafruit IO");
-
-  // connect to io.adafruit.com
-  io.connect();
-
-  // wait for a connection
-  while (io.status() < AIO_CONNECTED)
-  {
-    Serial.print(".");
-    delay(500);
-  }
-
-  // we are connected
-  Serial.println(io.statusText());
 }
 
 //*****************************************************************************
-//                              Loop principal
+// Loop principal
 //*****************************************************************************
 void loop()
 {
@@ -208,17 +166,10 @@ void loop()
   convertirTemp();            //Convertir valores de temperatura para displays
   servoLeds();                //Mover servo y encender leds según el valor
   display7Seg(contadorTimer); //Mostrar la temperatura en los displays
-
-  io.run();
-  ledVerdeFeed->save(pinPWMLedV);
-  ledAmarilloFeed->save(pinPWMLedA);
-  ledAmarilloFeed->save(pinPWMLedR);
-  temperaturaFeed->save(tempC);
-  delay(3000);
 }
 
 //******************************************************************************
-//                           Configuración Timer
+// Configuración Timer
 //******************************************************************************
 void configurarTimer(void)
 {
@@ -235,14 +186,14 @@ void configurarTimer(void)
 
   //Paso 4: Programar alarma
   //Tic = 1uS
-  timerAlarmWrite(timer, 15, true);
+  timerAlarmWrite(timer, 10, true);
 
   //Paso 5: Iniciar la alarma
   timerAlarmEnable(timer);
 }
 
 //*****************************************************************************
-//                  Configuración interrupción en botón 1
+//Configuración interrupción en botón 1
 //*****************************************************************************
 void configurarBoton1(void)
 {
@@ -251,7 +202,7 @@ void configurarBoton1(void)
 }
 
 //*****************************************************************************
-//                    Configuración módulo PWM Led Rojo
+//Configuración módulo PWM Led Rojo
 //*****************************************************************************
 void configurarPWMLedR(void)
 {
@@ -263,7 +214,7 @@ void configurarPWMLedR(void)
 }
 
 //*****************************************************************************
-//                  Configuración módulo PWM Led Verde
+//Configuración módulo PWM Led Verde
 //*****************************************************************************
 void configurarPWMLedV(void)
 {
@@ -275,7 +226,7 @@ void configurarPWMLedV(void)
 }
 
 //*****************************************************************************
-//                Configuración módulo PWM Led Amarillo
+//Configuración módulo PWM Led Amarillo
 //*****************************************************************************
 void configurarPWMLedA(void)
 {
@@ -287,7 +238,7 @@ void configurarPWMLedA(void)
 }
 
 //*****************************************************************************
-//                  Configuración módulo PWM de Servo
+//Configuración módulo PWM de Servo
 //*****************************************************************************
 void configurarPWMServo(void)
 {
@@ -299,7 +250,7 @@ void configurarPWMServo(void)
 }
 
 //****************************************************************
-//                Filtro media Móvil exponencial EMA
+// Filtro media Móvil exponencial EMA
 //****************************************************************
 void emaADC(void)
 {
@@ -308,7 +259,7 @@ void emaADC(void)
 }
 
 //*****************************************************************************
-//            Función para tomar el valor de la temperatura
+//Función para tomar el valor de la temperatura
 //*****************************************************************************
 void temperatura(void)
 {
@@ -320,7 +271,7 @@ void temperatura(void)
 }
 
 //*****************************************************************************
-//            Función para convertir el valor de la temperatura
+//Función para convertir el valor de la temperatura
 //*****************************************************************************
 void convertirTemp(void)
 {
@@ -334,7 +285,7 @@ void convertirTemp(void)
 }
 
 //*****************************************************************************
-//              Función para encender leds y mover servo
+//Función para encender leds y mover servo
 //*****************************************************************************
 void servoLeds(void)
 {
@@ -364,7 +315,7 @@ void servoLeds(void)
 }
 
 //*****************************************************************************
-//                    Función para encender displays
+//Función para encender displays
 //*****************************************************************************
 void display7Seg(int contadorTimer)
 {
