@@ -15,7 +15,7 @@
 //*****************************************************************************
 //Definicion etiquetas
 //*****************************************************************************
-#define LM35 32   //toma de datos en sensor
+#define LM35 34   //toma de datos en sensor
 #define boton1 27 //Botón para parte 1
 
 //Parámetro PWM servo motor
