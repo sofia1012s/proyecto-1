@@ -74,6 +74,12 @@
 
 AdafruitIO_WiFi io(IO_USERNAME, IO_KEY, WIFI_SSID, WIFI_PASS);
 
+/******************************* Feeds **************************************/
+AdafruitIO_Feed *temp = io.feed("tempc");
+AdafruitIO_Feed *ledV = io.feed("pinpwmledv");
+AdafruitIO_Feed *ledA = io.feed("pinpwmleda");
+AdafruitIO_Feed *ledR = io.feed("pinpwmledr");
+
 //*****************************************************************************
 //Varibles globales
 //*****************************************************************************
