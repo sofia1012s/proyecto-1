@@ -186,7 +186,7 @@ void configurarTimer(void)
 
   //Paso 4: Programar alarma
   //Tic = 1uS
-  timerAlarmWrite(timer, 10, true);
+  timerAlarmWrite(timer, 1000, true);
 
   //Paso 5: Iniciar la alarma
   timerAlarmEnable(timer);
