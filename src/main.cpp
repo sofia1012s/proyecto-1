@@ -39,7 +39,7 @@
 
 //Parámetro PWM led Rojo
 #define pwmChannelLedR 2
-#define freqPWMLedR 5000
+#define freqPWMLedR 500037
 #define resolutionPWMLedR 8
 #define pinPWMLedR 25
 
@@ -65,8 +65,8 @@
 //*****************************************************************************
 
 /************************ Adafruit IO Config *******************************/
-//#define IO_USERNAME "sal19236"
-//#define IO_KEY "aio_KDgF05MqGAh9weMoZslP8mq26LG8"
+#define IO_USERNAME "sal19236"
+#define IO_KEY "aio_gBic17yRLEoLvK0IiRAykXxF9w8S"
 
 /******************************* WIFI **************************************/
 #define WIFI_SSID "Familia Salguero"
@@ -101,10 +101,8 @@ float voltage = 0.0;       //Valor de voltaje filtrado
 //Temporizadores
 hw_timer_t *timer = NULL;
 hw_timer_t *timer1 = NULL;
-hw_timer_t *timer2 = NULL;
 int contadorTimer = 0;
 int contadorTimer1 = 0;
-int contadorTimer2 = 0;
 
 //*****************************************************************************
 //Prototipos de funcion
@@ -133,12 +131,10 @@ void display7Seg(int contadorTimer);
 //Timers
 void configurarTimer(void);
 void configurarTimer1(void);
-void configurarTimer2(void);
 
 //interrupciones
 void IRAM_ATTR ISRTimer0();
 void IRAM_ATTR ISRTimer1();
-void IRAM_ATTR ISRTimer2();
 void IRAM_ATTR ISRBoton1();
 
 //*****************************************************************************
@@ -167,22 +163,13 @@ void IRAM_ATTR ISRTimer0() //interrupción para timer de displays
   }
 }
 
-void IRAM_ATTR ISRTimer1() //interrupción para timer de setup Adafruit
+void IRAM_ATTR ISRTimer1() //interrupción para timer de Adafruit
 {
   contadorTimer1 = 1;
 
   if (contadorTimer1 > 1)
   {
     contadorTimer1 = 0;
-  }
-}
-
-void IRAM_ATTR ISRTimer2() //interrupción para timer de loop Adafruit
-{
-  contadorTimer2 = 1;
-  if (contadorTimer2 > 1)
-  {
-    contadorTimer2 = 0;
   }
 }
 
@@ -202,13 +189,7 @@ void setup()
 
   // wait for a connection
   while (io.status() < AIO_CONNECTED)
-  {
-    if (contadorTimer1 == 1)
-    {
-      Serial.print(".");
-      contadorTimer1 = 0;
-    }
-  }
+    ;
 
   // we are connected
   Serial.println();
@@ -252,6 +233,16 @@ void loop()
   convertirTemp();            //Convertir valores de temperatura para displays
   servoLeds();                //Mover servo y encender leds según el valor
   display7Seg(contadorTimer); //Mostrar la temperatura en los displays
+
+  while (contadorTimer1 == 1)
+  {
+    io.run();
+    temp->save(tempC);
+    ledV->save(pinPWMLedV);
+    ledA->save(pinPWMLedA);
+    ledR->save(pinPWMLedR);
+    contadorTimer1 = 0;
+  }
 }
 
 //******************************************************************************
@@ -292,8 +283,8 @@ void configurarTimer1(void) //Timer para setup Adafruit
   timerAttachInterrupt(timer1, &ISRTimer1, true);
 
   //Paso 4: Programar alarma
-  //Tic = 1uS   500ms = 500000 uS
-  timerAlarmWrite(timer1, 500000, true);
+  //Tic = 1uS   3s = 3000000 uS
+  timerAlarmWrite(timer1, 3000000, true);
 
   //Paso 5: Iniciar la alarma
   timerAlarmEnable(timer1);
