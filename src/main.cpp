@@ -8,10 +8,10 @@
 //*****************************************************************************
 //                              Librerias
 //*****************************************************************************
-#include "AdafruitIO_WiFi.h"
-#include <Arduino.h>     //libreria de arduino
-#include "esp_adc_cal.h" //libreria para ADC
-#include "Display7Seg.h" //libreria para display 7 segmentos
+#include "AdafruitIO_WiFi.h" //Libreria para Adafruit
+#include <Arduino.h>         //libreria de arduino
+#include "esp_adc_cal.h"     //libreria para ADC
+#include "Display7Seg.h"     //libreria para display 7 segmentos
 
 //*****************************************************************************
 //                          Definicion etiquetas
@@ -60,24 +60,25 @@
 //Prescaler
 #define prescaler 80
 
-/************************ Adafruit IO Config *******************************/
-#define IO_USERNAME "sal19236"
-#define IO_KEY "aio_imWP87Jqur0BP6zIqDjXMgTskq3A"
+//*****************************************************************************
+//                         Configuración para Adafruit
+//*****************************************************************************
 
-/******************************* WIFI **************************************/
+// Adafruit IO Config
+#define IO_USERNAME "sal19236"
+#define IO_KEY ""
+
+// WIFI
 #define WIFI_SSID "Familia Salguero"
-#define WIFI_PASS "Salguero 2019"
+#define WIFI_PASS "Salguero2019"
 
 AdafruitIO_WiFi io(IO_USERNAME, IO_KEY, WIFI_SSID, WIFI_PASS);
-AdafruitIO_Feed *ledVerdeFeed = io.feed("pinpwmledv");
-AdafruitIO_Feed *ledAmarilloFeed = io.feed("pinpwmleda");
-AdafruitIO_Feed *ledRojoFeed = io.feed("pinpwmledr");
-AdafruitIO_Feed *temperaturaFeed = io.feed("tempc");
 
-#define INTERVAL_MESSAGE1 5000
-#define INTERVAL_MESSAGE2 7000
-#define INTERVAL_MESSAGE3 11000
-#define INTERVAL_MESSAGE4 13000
+// Feeds
+AdafruitIO_Feed *ledV = io.feed("pinpwmledv");
+AdafruitIO_Feed *ledA = io.feed("pinpwmleda");
+AdafruitIO_Feed *ledR = io.feed("pinpwmledr");
+AdafruitIO_Feed *temp = io.feed("tempc");
 
 //*****************************************************************************
 //                            Varibles globales
@@ -97,9 +98,13 @@ double adcFiltradoEMA = 0; // S(0) = Y(0)
 double alpha = 0.09;       // Factor de suavizado
 float voltage = 0.0;       //Valor de voltaje filtrado
 
-//Temporizador
+//Temporizadores
 hw_timer_t *timer = NULL;
+hw_timer_t *timer1 = NULL;
+hw_timer_t *timer2 = NULL;
 int contadorTimer = 0;
+boolean contadorTimer1 = 0;
+boolean contadorTimer2 = 0;
 
 //*****************************************************************************
 //                          Prototipos de funcion
@@ -116,7 +121,11 @@ void convertirTemp(void);
 void servoLeds(void);
 void display7Seg(int contadorTimer);
 void configurarTimer(void);
+void configurarTimer1(void);
+void configurarTimer2(void);
 void IRAM_ATTR ISRTimer0();
+void IRAM_ATTR ISRTimer1();
+void IRAM_ATTR ISRTimer2();
 void IRAM_ATTR ISRBoton1();
 
 //*****************************************************************************
@@ -145,13 +154,51 @@ void IRAM_ATTR ISRTimer0() //interrupción para timer
   }
 }
 
+void IRAM_ATTR ISRTimer1() //interrupción para timer
+{
+  contadorTimer1 = 1;
+}
+
+void IRAM_ATTR ISRTimer2() //interrupción para timer
+{
+  contadorTimer2 = 1;
+}
+
 //*****************************************************************************
 //                            Configuración
 //*****************************************************************************
 void setup()
 {
-  //Temporizador
+  // start the serial connection
+  Serial.begin(115200);
+
+  // wait for serial monitor to open
+  while (!Serial)
+    ;
+
+  Serial.print("Connecting to Adafruit IO");
+
+  // connect to io.adafruit.com
+  io.connect();
+
+  // wait for a connection
+  while (io.status() < AIO_CONNECTED)
+  {
+    if (contadorTimer1 == 1)
+    {
+      Serial.print(".");
+      contadorTimer1 = 0;
+    }
+  }
+
+  // we are connected
+  Serial.println();
+  Serial.println(io.statusText());
+
+  //Temporizadores
   configurarTimer();
+  configurarTimer1();
+  configurarTimer2();
 
   //Botón
   pinMode(boton1, INPUT_PULLUP);
@@ -174,28 +221,6 @@ void setup()
   digitalWrite(display3, LOW);
 
   desplegar7Seg(0);
-
-  // start the serial connection
-  Serial.begin(115200);
-
-  // wait for serial monitor to open
-  while (!Serial)
-    ;
-
-  Serial.print("Connecting to Adafruit IO");
-
-  // connect to io.adafruit.com
-  io.connect();
-
-  // wait for a connection
-  while (io.status() < AIO_CONNECTED)
-  {
-    Serial.print(".");
-    delay(500);
-  }
-
-  // we are connected
-  Serial.println(io.statusText());
 }
 
 //*****************************************************************************
@@ -203,22 +228,26 @@ void setup()
 //*****************************************************************************
 void loop()
 {
+  io.run();
+  // save count to the 'counter' feed on Adafruit IO
+  Serial.print("sending -> ");
+  if (contadorTimer2 == 1)
+  {
+    temp->save(tempC);
+    ledV->save(pinPWMLedV);
+    ledA->save(pinPWMLedA);
+    ledR->save(pinPWMLedR);
+    contadorTimer2 = 0;
+  }
   emaADC();                   //Tomar temperatura y filtrarla
   temperatura();              //Tomar temperatura para mostrarla en displays
   convertirTemp();            //Convertir valores de temperatura para displays
   servoLeds();                //Mover servo y encender leds según el valor
   display7Seg(contadorTimer); //Mostrar la temperatura en los displays
-
-  io.run();
-  ledVerdeFeed->save(pinPWMLedV);
-  ledAmarilloFeed->save(pinPWMLedA);
-  ledAmarilloFeed->save(pinPWMLedR);
-  temperaturaFeed->save(tempC);
-  delay(3000);
 }
 
 //******************************************************************************
-//                           Configuración Timer
+//                           Configuración Timers
 //******************************************************************************
 void configurarTimer(void)
 {
@@ -236,6 +265,48 @@ void configurarTimer(void)
   //Paso 4: Programar alarma
   //Tic = 1uS
   timerAlarmWrite(timer, 15, true);
+
+  //Paso 5: Iniciar la alarma
+  timerAlarmEnable(timer);
+}
+
+void configurarTimer1(void)
+{
+  //Fosc = 80MHz = 80,000,000 Hz
+  //Fosc / Prescaler = 80,000,000 / 80 = 1,000,000
+  //Tosc = 1/Fosc = 1uS
+
+  //Paso 2: Seleccionar Timer
+  //Timer 0, prescaler = 80, flanco de subida
+  timer1 = timerBegin(0, prescaler, true);
+
+  //paso 3: Asignar el handler de la interrupción
+  timerAttachInterrupt(timer1, &ISRTimer1, true);
+
+  //Paso 4: Programar alarma
+  //Tic = 1uS - 500 mS = 500000 uS
+  timerAlarmWrite(timer1, 500000, true);
+
+  //Paso 5: Iniciar la alarma
+  timerAlarmEnable(timer1);
+}
+
+void configurarTimer2(void)
+{
+  //Fosc = 80MHz = 80,000,000 Hz
+  //Fosc / Prescaler = 80,000,000 / 80 = 1,000,000
+  //Tosc = 1/Fosc = 1uS
+
+  //Paso 2: Seleccionar Timer
+  //Timer 0, prescaler = 80, flanco de subida
+  timer2 = timerBegin(0, prescaler, true);
+
+  //paso 3: Asignar el handler de la interrupción
+  timerAttachInterrupt(timer2, &ISRTimer2, true);
+
+  //Paso 4: Programar alarma
+  //Tic = 1uS - 3 segundos = 3000000 uS
+  timerAlarmWrite(timer, 3000000, true);
 
   //Paso 5: Iniciar la alarma
   timerAlarmEnable(timer);
