@@ -65,8 +65,8 @@
 //*****************************************************************************
 
 /************************ Adafruit IO Config *******************************/
-#define IO_USERNAME "sal19236"
-#define IO_KEY "aio_gBic17yRLEoLvK0IiRAykXxF9w8S"
+#define IO_USERNAME  "sal19236"
+#define IO_KEY       "aio_GoBE63aeb5I5mZrr6O95pDbVwJ4s"
 
 /******************************* WIFI **************************************/
 #define WIFI_SSID "Familia Salguero"
@@ -76,9 +76,6 @@ AdafruitIO_WiFi io(IO_USERNAME, IO_KEY, WIFI_SSID, WIFI_PASS);
 
 /******************************* Feeds **************************************/
 AdafruitIO_Feed *temp = io.feed("tempc");
-AdafruitIO_Feed *ledV = io.feed("pinpwmledv");
-AdafruitIO_Feed *ledA = io.feed("pinpwmleda");
-AdafruitIO_Feed *ledR = io.feed("pinpwmledr");
 
 //*****************************************************************************
 //Varibles globales
@@ -189,7 +186,9 @@ void setup()
 
   // wait for a connection
   while (io.status() < AIO_CONNECTED)
-    ;
+  {
+    //Espero la conexión
+  }
 
   // we are connected
   Serial.println();
@@ -198,7 +197,6 @@ void setup()
   //Temporizadores
   configurarTimer();
   configurarTimer1();
-  //configurarTimer2();
 
   //Botón
   pinMode(boton1, INPUT_PULLUP);
@@ -238,9 +236,6 @@ void loop()
   {
     io.run();
     temp->save(tempC);
-    ledV->save(pinPWMLedV);
-    ledA->save(pinPWMLedA);
-    ledR->save(pinPWMLedR);
     contadorTimer1 = 0;
   }
 }
@@ -262,7 +257,7 @@ void configurarTimer(void) //Timer para displays
   timerAttachInterrupt(timer, &ISRTimer0, true);
 
   //Paso 4: Programar alarma
-  //Tic = 1uS
+  //Tic = 1uS     1ms = 1000uS
   timerAlarmWrite(timer, 1000, true);
 
   //Paso 5: Iniciar la alarma
