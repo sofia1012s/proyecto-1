@@ -16,8 +16,8 @@
 //*****************************************************************************
 //Definicion etiquetas
 //*****************************************************************************
-#define LM35 34   //toma de datos en sensor
-#define boton1 27 //Botón para parte 1
+#define LM35 33   //toma de datos en sensor
+#define boton1 27 //Botón para tomar temperatura
 
 //Parámetro PWM servo motor
 #define pwmChannelServo 5
@@ -66,7 +66,7 @@
 
 /************************ Adafruit IO Config *******************************/
 #define IO_USERNAME  "sal19236"
-#define IO_KEY       "aio_Vsdi92isYO5lD9beePjesOhA77PL"
+#define IO_KEY       "aio_atXN96TScOUPONoV9fOITVkMpbi5"
 
 /******************************* WIFI **************************************/
 #define WIFI_SSID "Familia Salguero"
@@ -171,26 +171,18 @@ void IRAM_ATTR ISRTimer1() //interrupción para timer de Adafruit
 }
 
 //*****************************************************************************
-//configuracion
+//Configuración
 //*****************************************************************************
 void setup()
 {
   //Setup de adafruit
-  // start the serial connection
   Serial.begin(115200);
-
   Serial.print("Connecting to Adafruit IO");
-
-  // connect to io.adafruit.com
   io.connect();
-
-  // wait for a connection
   while (io.status() < AIO_CONNECTED)
   {
     //Espero la conexión
   }
-
-  // we are connected
   Serial.println();
   Serial.println(io.statusText());
 
@@ -228,11 +220,11 @@ void loop()
 {
   emaADC();                   //Tomar temperatura y filtrarla
   temperatura();              //Tomar temperatura para mostrarla en displays
-  convertirTemp();            //Convertir valores de temperatura para displays
   servoLeds();                //Mover servo y encender leds según el valor
+  convertirTemp();            //Convertir valores de temperatura para displays
   display7Seg(contadorTimer); //Mostrar la temperatura en los displays
 
-  while (contadorTimer1 == 1)
+  while (contadorTimer1 == 1) //actualiza el valor de la temperatura a Adafruit
   {
     io.run();
     temp->save(tempC);
@@ -249,18 +241,16 @@ void configurarTimer(void) //Timer para displays
   //Fosc / Prescaler = 80,000,000 / 80 = 1,000,000
   //Tosc = 1/Fosc = 1uS
 
-  //Paso 2: Seleccionar Timer
   //Timer 0, prescaler = 80, flanco de subida
   timer = timerBegin(0, prescaler, true);
 
-  //paso 3: Asignar el handler de la interrupción
+  //Handler de la interrupción
   timerAttachInterrupt(timer, &ISRTimer0, true);
 
-  //Paso 4: Programar alarma
   //Tic = 1uS     1ms = 1000uS
   timerAlarmWrite(timer, 1000, true);
 
-  //Paso 5: Iniciar la alarma
+  //Inicia alarma
   timerAlarmEnable(timer);
 }
 
@@ -270,18 +260,16 @@ void configurarTimer1(void) //Timer para setup Adafruit
   //Fosc / Prescaler = 80,000,000 / 80 = 1,000,000
   //Tosc = 1/Fosc = 1uS
 
-  //Paso 2: Seleccionar Timer
-  //Timer 0, prescaler = 80, flanco de subida
+  //Timer 1, prescaler = 80, flanco de subida
   timer1 = timerBegin(1, prescaler, true);
 
-  //paso 3: Asignar el handler de la interrupción
+  //Asignar el handler de la interrupción
   timerAttachInterrupt(timer1, &ISRTimer1, true);
 
-  //Paso 4: Programar alarma
   //Tic = 1uS   3s = 3000000 uS
   timerAlarmWrite(timer1, 3000000, true);
 
-  //Paso 5: Iniciar la alarma
+  //Iniciar la alarma
   timerAlarmEnable(timer1);
 }
 //*****************************************************************************
@@ -290,7 +278,7 @@ void configurarTimer1(void) //Timer para setup Adafruit
 void configurarBoton1(void)
 {
   //me coloca una interrupción en el botón 1 (durante el cambio de alto a bajo)
-  attachInterrupt(digitalPinToInterrupt(boton1), ISRBoton1, FALLING);
+  attachInterrupt(digitalPinToInterrupt(boton1), ISRBoton1, RISING);
 }
 
 //*****************************************************************************
@@ -298,10 +286,10 @@ void configurarBoton1(void)
 //*****************************************************************************
 void configurarPWMLedR(void)
 {
-  //Paso 1: Configurar el modulo PWM
+  //Configurar el modulo PWM
   ledcSetup(pwmChannelLedR, freqPWMLedR, resolutionPWMLedR);
 
-  //Paso 2: seleccionar en que GPIO tendremos nuestra señal PWM
+  //Seleccionar en qué GPIO tendremos nuestra señal PWM
   ledcAttachPin(pinPWMLedR, pwmChannelLedR);
 }
 
@@ -310,10 +298,10 @@ void configurarPWMLedR(void)
 //*****************************************************************************
 void configurarPWMLedV(void)
 {
-  //Paso 1: Configurar el modulo PWM
+  //Configurar el modulo PWM
   ledcSetup(pwmChannelLedV, freqPWMLedV, resolutionPWMLedV);
 
-  //Paso 2: seleccionar en que GPIO tendremos nuestra señal PWM
+  //Seleccionar en qué GPIO tendremos nuestra señal PWM
   ledcAttachPin(pinPWMLedV, pwmChannelLedV);
 }
 
@@ -322,10 +310,10 @@ void configurarPWMLedV(void)
 //*****************************************************************************
 void configurarPWMLedA(void)
 {
-  //Paso 1: Configurar el modulo PWM
+  //Configurar el modulo PWM
   ledcSetup(pwmChannelLedA, freqPWMLedA, resolutionPWMLedA);
 
-  //Paso 2: seleccionar en que GPIO tendremos nuestra señal PWM
+  //Seleccionar en qué GPIO tendremos nuestra señal PWM
   ledcAttachPin(pinPWMLedA, pwmChannelLedA);
 }
 
@@ -334,10 +322,10 @@ void configurarPWMLedA(void)
 //*****************************************************************************
 void configurarPWMServo(void)
 {
-  //Paso 1: Configurar el modulo PWM
+  //Configurar el modulo PWM
   ledcSetup(pwmChannelServo, freqPWMServo, resolutionPWMServo);
 
-  //Paso 2: seleccionar en que GPIO tendremos nuestra señal PWM
+  //Seleccionar en qué GPIO tendremos nuestra señal PWM
   ledcAttachPin(pinPWMServo, pwmChannelServo);
 }
 
@@ -346,8 +334,8 @@ void configurarPWMServo(void)
 //****************************************************************
 void emaADC(void)
 {
-  adcRaw = analogReadMilliVolts(LM35);
-  adcFiltradoEMA = (alpha * adcRaw) + ((1.0 - alpha) * adcFiltradoEMA);
+  adcRaw = analogReadMilliVolts(LM35); //toma valor que está midiendo el sensor
+  adcFiltradoEMA = (alpha * adcRaw) + ((1.0 - alpha) * adcFiltradoEMA); //filtra ese valor
 }
 
 //*****************************************************************************
@@ -367,7 +355,7 @@ void temperatura(void)
 //*****************************************************************************
 void convertirTemp(void)
 {
-  tempC = voltage / 10;
+  tempC = voltage / 10; 
   int temp = tempC * 10; //variable temporal
   decenas = temp / 100;
   temp = temp - (decenas * 100);
@@ -394,7 +382,7 @@ void servoLeds(void)
     ledcWrite(pwmChannelLedV, 0);
     ledcWrite(pwmChannelLedA, 255);
     ledcWrite(pwmChannelLedR, 0);
-    ledcWrite(pwmChannelServo, 4546);
+    ledcWrite(pwmChannelServo, 4000);
   }
 
   else if (tempC > 37.5)
